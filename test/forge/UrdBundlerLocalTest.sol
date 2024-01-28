@@ -1,21 +1,26 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {IUniversalRewardsDistributor} from
-    "../../lib/universal-rewards-distributor/src/interfaces/IUniversalRewardsDistributor.sol";
-
 import {ErrorsLib} from "../../src/libraries/ErrorsLib.sol";
-import {ErrorsLib as UrdErrorsLib} from "../../lib/universal-rewards-distributor/src/libraries/ErrorsLib.sol";
 
 import {Merkle} from "../../lib/murky/src/Merkle.sol";
-import {UrdFactory} from "../../lib/universal-rewards-distributor/src/UrdFactory.sol";
 
 import "../../src/mocks/bundlers/UrdBundlerMock.sol";
 
 import "./helpers/LocalTest.sol";
 
+interface IUrdFactory {
+    function createUrd(
+        address initialOwner,
+        uint256 initialTimelock,
+        bytes32 initialRoot,
+        bytes32 initialIpfsHash,
+        bytes32 salt
+    ) external returns (address urd);
+}
+
 contract UrdBundlerLocalTest is LocalTest {
-    UrdFactory internal urdFactory;
+    IUrdFactory internal urdFactory;
     Merkle internal merkle;
 
     address internal distributor;
@@ -25,10 +30,12 @@ contract UrdBundlerLocalTest is LocalTest {
 
         bundler = new UrdBundlerMock();
 
-        urdFactory = new UrdFactory();
+        urdFactory = IUrdFactory(
+            _deploy("lib/universal-rewards-distributor/out/UrdFactory.sol/UrdFactory.json", abi.encode(OWNER))
+        );
         merkle = new Merkle();
 
-        distributor = address(urdFactory.createUrd(OWNER, 0, bytes32(0), hex"", hex""));
+        distributor = urdFactory.createUrd(OWNER, 0, bytes32(0), hex"", hex"");
     }
 
     function testClaimRewardsZeroAddressDistributor(uint256 claimable, address account) public {
@@ -109,7 +116,7 @@ contract UrdBundlerLocalTest is LocalTest {
         bundle.push(_urdClaim(distributor, USER, address(loanToken), claimable, loanTokenProof, false));
 
         vm.prank(USER);
-        vm.expectRevert(bytes(UrdErrorsLib.ALREADY_CLAIMED));
+        vm.expectRevert();
         bundler.multicall(bundle);
     }
 

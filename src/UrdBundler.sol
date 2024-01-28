@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity 0.8.21;
+pragma solidity 0.8.24;
 
-import {IUniversalRewardsDistributor} from
-    "../lib/universal-rewards-distributor/src/interfaces/IUniversalRewardsDistributor.sol";
+interface IUniversalRewardsDistributor {
+    function claim(address account, address reward, uint256 claimable, bytes32[] memory proof)
+        external
+        returns (uint256 amount);
+    function setRoot(bytes32 newRoot, bytes32 newIpfsHash) external;
+}
 
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
 
